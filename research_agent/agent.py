@@ -109,7 +109,7 @@ async def chat():
     print(f"\nRegistered subagents: {', '.join(agents.keys())}")
     print(f"Session logs: {session_dir}")
     print("\nInput controls:")
-    print("  • Shift+Enter: New line")
+    print("  • Meta+Enter (or Esc then Enter): New line")
     print("  • Enter: Submit prompt")
     print("  • @image:/path/to/file.png: Attach image")
     print("  • Type 'exit' or 'quit' to end")
@@ -119,7 +119,7 @@ async def chat():
         async with ClaudeSDKClient(options=options) as client:
             while True:
                 # Get input (supports multi-line and images by default)
-                user_input, content_blocks = get_user_input(multiline_mode=True)
+                user_input, content_blocks = await get_user_input(multiline_mode=True)
 
                 if not user_input or user_input.lower() in ["exit", "quit", "q"]:
                     break

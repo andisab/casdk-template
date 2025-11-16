@@ -3,11 +3,11 @@
 import base64
 from pathlib import Path
 from typing import List, Dict, Any
-from prompt_toolkit import prompt
+from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 
 
-def get_multiline_input() -> tuple[str, List[str]]:
+async def get_multiline_input() -> tuple[str, List[str]]:
     """
     Get multi-line input from user with optional image attachments.
 
@@ -15,7 +15,7 @@ def get_multiline_input() -> tuple[str, List[str]]:
         tuple: (prompt_text, list_of_image_paths)
 
     Key bindings:
-        - Shift+Enter: Insert newline
+        - Meta+Enter or Escape,Enter: Insert newline
         - Enter: Submit prompt
         - Ctrl+C: Cancel input
     """
@@ -27,19 +27,19 @@ def get_multiline_input() -> tuple[str, List[str]]:
         """Submit on Enter."""
         event.current_buffer.validate_and_handle()
 
-    @bindings.add('s-enter')  # Shift+Enter
+    @bindings.add('escape', 'enter')  # Meta+Enter or Escape,Enter
     def _(event):
-        """Insert newline on Shift+Enter."""
+        """Insert newline on Meta+Enter."""
         event.current_buffer.insert_text('\n')
 
     try:
-        # Get multi-line input
-        user_text = prompt(
-            "\nYou: ",
+        # Get multi-line input using async session
+        session = PromptSession(
             multiline=True,
             key_bindings=bindings,
             prompt_continuation="...  "
         )
+        user_text = await session.prompt_async("\nYou: ")
     except (EOFError, KeyboardInterrupt):
         return "", []
 
@@ -117,7 +117,7 @@ def create_message_content(prompt_text: str, image_paths: List[str]) -> List[Dic
     return content_blocks
 
 
-def get_user_input(multiline_mode: bool = True) -> tuple[str, List[Dict[str, Any]] | None]:
+async def get_user_input(multiline_mode: bool = True) -> tuple[str, List[Dict[str, Any]] | None]:
     """
     Get user input with multi-line and image support.
 
@@ -130,7 +130,7 @@ def get_user_input(multiline_mode: bool = True) -> tuple[str, List[Dict[str, Any
         - If images: (text, content_blocks) - use content blocks
     """
     # Multi-line mode (default)
-    prompt_text, image_paths = get_multiline_input()
+    prompt_text, image_paths = await get_multiline_input()
 
     if not prompt_text:
         return "", None

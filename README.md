@@ -62,20 +62,20 @@ Agent: Researching 4 areas: hardware/qubits, algorithms/applications,
 Agent: Complete. Report: files/reports/quantum_computing_summary_20251115.txt
 ```
 
-**Multi-line prompt with images (Shift+Enter for newlines):**
+**Multi-line prompt with images (Meta+Enter for newlines):**
 ```
-You: Analyze this system architecture diagram: [Shift+Enter]
-...  [Shift+Enter]
+You: Analyze this system architecture diagram: [Meta+Enter]
+...  [Meta+Enter]
 ...  @image:~/Documents/architecture.png
   ✓ Image attached: ~/Documents/architecture.png
-...  [Shift+Enter]
+...  [Meta+Enter]
 ...  Identify potential bottlenecks and suggest improvements. [Enter]
 
 Agent: [Analyzes image and provides feedback]
 ```
 
 **Key Controls:**
-- **Shift+Enter**: New line
+- **Meta+Enter (or Esc then Enter)**: New line
 - **Enter**: Submit prompt
 - **@image:/path**: Attach image
 

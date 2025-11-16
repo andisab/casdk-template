@@ -34,7 +34,7 @@ eza -TL 3 --icons --git-ignore
 uv run research_agent/agent.py
 
 # Multi-line input & images (always enabled)
-# Shift+Enter: Insert newline
+# Meta+Enter (or Esc then Enter): Insert newline
 # Enter: Submit prompt
 # @image:/path/to/file.png to attach images
 # See MULTILINE_INPUT_GUIDE.md for details
