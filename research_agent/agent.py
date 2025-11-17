@@ -2,6 +2,8 @@
 
 import asyncio
 import os
+import subprocess
+import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, AgentDefinition, HookMatcher
@@ -9,7 +11,6 @@ from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, AgentDefinitio
 from research_agent.utils.subagent_tracker import SubagentTracker
 from research_agent.utils.transcript import setup_session, TranscriptWriter
 from research_agent.utils.message_handler import process_assistant_message
-from research_agent.utils.enhanced_input import get_user_input
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +24,60 @@ def load_prompt(filename: str) -> str:
     prompt_path = PROMPTS_DIR / filename
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read().strip()
+
+
+def find_claude_cli() -> str | None:
+    """Find the Claude CLI executable.
+
+    Tries multiple approaches:
+    1. Check if 'claude' is in PATH
+    2. Check npm global bin directory
+    3. Check common nvm installation paths
+
+    Returns:
+        Path to claude executable, or None if not found
+    """
+    # First, try shutil.which (checks PATH)
+    claude_path = shutil.which("claude")
+    if claude_path:
+        return claude_path
+
+    # Try npm global bin directory
+    try:
+        npm_prefix = subprocess.run(
+            ["npm", "config", "get", "prefix"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=5
+        ).stdout.strip()
+
+        npm_bin_claude = Path(npm_prefix) / "bin" / "claude"
+        if npm_bin_claude.exists():
+            return str(npm_bin_claude)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+
+    # Check common nvm paths as fallback
+    home = Path.home()
+    nvm_paths = [
+        home / ".nvm" / "versions" / "node",
+        home / ".local" / "share" / "nvm",
+    ]
+
+    for nvm_base in nvm_paths:
+        if nvm_base.exists():
+            # Find the most recent node version
+            try:
+                node_versions = sorted(nvm_base.iterdir(), reverse=True)
+                for version_dir in node_versions:
+                    claude_bin = version_dir / "bin" / "claude"
+                    if claude_bin.exists():
+                        return str(claude_bin)
+            except (OSError, PermissionError):
+                continue
+
+    return None
 
 
 async def chat():
@@ -66,8 +121,8 @@ async def chat():
         "report-writer": AgentDefinition(
             description=(
                 "Use this agent when you need to create a formal research report document. "
-                "The report-writer reads research findings from files/research_notes/ and synthesizes "
-                "them into clear, concise, professionally formatted reports in files/reports/. "
+                "The report-writer reads research findings from c-w-d/research-notes/ and synthesizes "
+                "them into clear, concise, professionally formatted reports in c-w-d/results/. "
                 "Ideal for creating structured documents with proper citations and organization. "
                 "Does NOT conduct web searches - only reads existing research notes and creates reports."
             ),
@@ -93,6 +148,23 @@ async def chat():
         ]
     }
 
+    # Find Claude CLI executable
+    claude_cli_path = find_claude_cli()
+    if not claude_cli_path:
+        print("\n❌ Error: Could not find Claude CLI executable")
+        print("\nPlease install Claude Code:")
+        print("  npm install -g @anthropic-ai/claude-code")
+        print("\nOr ensure it's in your PATH:")
+        print("  export PATH=\"$(npm config get prefix)/bin:$PATH\"")
+        return
+
+    # Add the npm bin directory to PATH so node can be found
+    # Claude CLI is a Node.js script that requires node in PATH
+    claude_bin_dir = Path(claude_cli_path).parent
+    current_path = os.environ.get("PATH", "")
+    if str(claude_bin_dir) not in current_path:
+        os.environ["PATH"] = f"{claude_bin_dir}:{current_path}"
+
     options = ClaudeAgentOptions(
         permission_mode="bypassPermissions",
         setting_sources=["project"],  # Load skills from project .claude directory
@@ -100,7 +172,8 @@ async def chat():
         allowed_tools=["Task"],
         agents=agents,
         hooks=hooks,
-        model="haiku"
+        model="haiku",
+        cli_path=claude_cli_path
     )
 
     print("\n=== Research Agent ===")
@@ -108,34 +181,25 @@ async def chat():
     print("I can delegate complex tasks to specialized researcher and report-writer agents.")
     print(f"\nRegistered subagents: {', '.join(agents.keys())}")
     print(f"Session logs: {session_dir}")
-    print("\nInput controls:")
-    print("  • Meta+Enter (or Esc then Enter): New line")
-    print("  • Enter: Submit prompt")
-    print("  • @image:/path/to/file.png: Attach image")
-    print("  • Type 'exit' or 'quit' to end")
-    print()
+    print("Type 'exit' or 'quit' to end.\n")
 
     try:
         async with ClaudeSDKClient(options=options) as client:
             while True:
-                # Get input (supports multi-line and images by default)
-                user_input, content_blocks = await get_user_input(multiline_mode=True)
+                # Get input
+                try:
+                    user_input = input("\nYou: ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    break
 
                 if not user_input or user_input.lower() in ["exit", "quit", "q"]:
                     break
 
                 # Write user input to transcript (file only, not console)
                 transcript.write_to_file(f"\nYou: {user_input}\n")
-                if content_blocks:
-                    image_count = sum(1 for block in content_blocks if block['type'] == 'image')
-                    if image_count > 0:
-                        transcript.write_to_file(f"[{image_count} image(s) attached]\n")
 
-                # Send to agent (use content blocks if images attached, otherwise simple string)
-                if content_blocks:
-                    await client.query(prompt=content_blocks)
-                else:
-                    await client.query(prompt=user_input)
+                # Send to agent
+                await client.query(prompt=user_input)
 
                 transcript.write("\nAgent: ", end="")
 

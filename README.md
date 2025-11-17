@@ -59,27 +59,8 @@ Agent: Researching 4 areas: hardware/qubits, algorithms/applications,
 
 [🚀 Spawning REPORT-WRITER-1: Synthesize research into final report]
 
-Agent: Complete. Report: files/reports/quantum_computing_summary_20251115.txt
+Agent: Complete. Report: c-w-d/results/quantum_computing_summary_20251115.txt
 ```
-
-**Multi-line prompt with images (Meta+Enter for newlines):**
-```
-You: Analyze this system architecture diagram: [Meta+Enter]
-...  [Meta+Enter]
-...  @image:~/Documents/architecture.png
-  ✓ Image attached: ~/Documents/architecture.png
-...  [Meta+Enter]
-...  Identify potential bottlenecks and suggest improvements. [Enter]
-
-Agent: [Analyzes image and provides feedback]
-```
-
-**Key Controls:**
-- **Meta+Enter (or Esc then Enter)**: New line
-- **Enter**: Submit prompt
-- **@image:/path**: Attach image
-
-See [MULTILINE_INPUT_GUIDE.md](./MULTILINE_INPUT_GUIDE.md) for complete usage instructions.
 
 ## Architecture
 
@@ -137,7 +118,7 @@ See [MULTILINE_INPUT_GUIDE.md](./MULTILINE_INPUT_GUIDE.md) for complete usage in
 - **Responsibilities**:
   - Reads all research notes from `files/research_notes/`
   - Applies professional formatting guidelines from skills
-  - Creates comprehensive reports in `files/reports/`
+  - Creates comprehensive reports in `c-w-d/results/`
 
 ## Project Structure
 
@@ -339,7 +320,7 @@ This is a standalone project. Feel free to:
 
 - [Claude Agent SDK Documentation](https://docs.anthropic.com/en/docs/claude-code/sdk/sdk-overview)
 - [Claude API Reference](https://docs.anthropic.com/claude)
-- [Example Research Reports](./files/reports/) (after running)
+- [Example Research Reports](./c-w-d/results/) (after running)
 
 ## License
 

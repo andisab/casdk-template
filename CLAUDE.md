@@ -33,12 +33,6 @@ eza -TL 3 --icons --git-ignore
 ./scripts/run.sh
 uv run research_agent/agent.py
 
-# Multi-line input & images (always enabled)
-# Meta+Enter (or Esc then Enter): Insert newline
-# Enter: Submit prompt
-# @image:/path/to/file.png to attach images
-# See MULTILINE_INPUT_GUIDE.md for details
-
 # Development
 python scripts/analyze_logs.py              # Analyze latest session
 python scripts/analyze_logs.py session_*    # Analyze specific session
@@ -60,10 +54,10 @@ uv add <package>                           # Add new dependency
 1. **User Request** → Lead Agent
 2. **Lead Agent** analyzes and breaks into 2-4 subtopics
 3. **Lead Agent** spawns 2-4 Researcher subagents in PARALLEL via Task tool
-4. **Researchers** use WebSearch (3-7 searches each) and Write to `files/research_notes/`
+4. **Researchers** use WebSearch (3-7 searches each) and Write to `c-w-d/research-notes/`
 5. **Lead Agent** waits for all researchers to complete
 6. **Lead Agent** spawns Report-Writer subagent via Task tool
-7. **Report-Writer** uses Glob/Read to load research, Write to create report in `files/reports/`
+7. **Report-Writer** uses Glob/Read to load research, Write to create report in `c-w-d/results`
 8. **Lead Agent** confirms completion to user
 
 ### Hook System
@@ -190,8 +184,8 @@ Session logging utilities:
 - Default .gitignore excludes all log contents
 
 **Research Files**: Created in `files/`
-- `files/research_notes/`: Raw research from researchers
-- `files/reports/`: Final synthesized reports
+- `c-w-d/research-notes/`: Raw research from researchers
+- `c-w-d/results/`: Final synthesized reports
 - .gitignore excludes file contents but tracks directory structure
 
 ### Updating Prompts
