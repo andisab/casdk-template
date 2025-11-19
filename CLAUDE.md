@@ -143,7 +143,7 @@ tools=["WebSearch", "Write", "Read", "Edit", "Bash"]
 
 **Working Directory**:
 - Files created relative to where agent is run
-- Default: `files/research_notes/` and `files/reports/`
+- Default: `files/research-notes/` and `files/reports/`
 
 ## Implementation Details
 

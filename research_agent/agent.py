@@ -110,7 +110,7 @@ async def chat():
             description=(
                 "Use this agent when you need to gather research information on any topic. "
                 "The researcher uses web search to find relevant information, articles, and sources "
-                "from across the internet. Writes research findings to files/research_notes/ "
+                "from across the internet. Writes research findings to files/research-notes/ "
                 "for later use by report writers. Ideal for complex research tasks "
                 "that require deep searching and cross-referencing."
             ),
