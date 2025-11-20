@@ -69,10 +69,6 @@ memory/context/*
 logs/**/*
 !logs/**/.gitkeep
 
-# Claude skills (user-specific symlinks)
-.claude/skills/*
-!.claude/skills/.gitkeep
-
 # Temporary files
 *.log
 *.tmp

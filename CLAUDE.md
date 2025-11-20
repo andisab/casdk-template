@@ -39,9 +39,6 @@ python scripts/analyze_logs.py session_*    # Analyze specific session
 ./scripts/clean_logs.sh                     # Clean old logs (keeps 7 days)
 ./scripts/clean_logs.sh 30                  # Keep 30 days
 
-# Testing
-python test_hooks.py                        # Test hook system
-
 # Dependency management
 uv sync                                     # Install/update dependencies
 uv add <package>                           # Add new dependency
@@ -97,8 +94,7 @@ Current subagent types:
 
 **Location**: `.claude/skills/`
 
-- `professional-research-summary`: Report formatting guidelines
-- Add new skills by creating directories with `SKILL.md` files
+Skills are optional modular knowledge packages that agents can load for specialized formatting, domain expertise, or task-specific guidelines. See `.claude/skills/README.md` for documentation on creating and using skills.
 
 ## Development Notes
 
@@ -278,6 +274,5 @@ logging.basicConfig(level=logging.DEBUG)
 ## See Also
 
 - **README.md**: User-facing documentation
-- **test_hooks.py**: Hook system testing
-- **.claude/skills/README.md**: Skills documentation
+- **.claude/skills/README.md**: Skills documentation and examples
 - **pyproject.toml**: Dependency configuration
