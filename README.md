@@ -1,4 +1,4 @@
-# Multi-Agent Research System
+# Sample Agentic Team: Multi-Agent Research System
 
 A standalone multi-agent research system built with the Claude Agent SDK. This system coordinates specialized subagents to research any topic and generate comprehensive reports.
 
