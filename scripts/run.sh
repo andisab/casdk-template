@@ -21,4 +21,4 @@ fi
 echo "Starting Research Agent..."
 echo ""
 
-uv run research_agent/agent.py
+uv run agents/agent.py

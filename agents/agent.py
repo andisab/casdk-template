@@ -8,9 +8,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, AgentDefinition, HookMatcher
 
-from research_agent.utils.subagent_tracker import SubagentTracker
-from research_agent.utils.transcript import setup_session, TranscriptWriter
-from research_agent.utils.message_handler import process_assistant_message
+from agents.utils.subagent_tracker import SubagentTracker
+from agents.utils.transcript import setup_session, TranscriptWriter
+from agents.utils.message_handler import process_assistant_message
 
 # Load environment variables
 load_dotenv()
@@ -110,7 +110,7 @@ async def chat():
             description=(
                 "Use this agent when you need to gather research information on any topic. "
                 "The researcher uses web search to find relevant information, articles, and sources "
-                "from across the internet. Writes research findings to files/research-notes/ "
+                "from across the internet. Writes research findings to workspace/research-notes/ "
                 "for later use by report writers. Ideal for complex research tasks "
                 "that require deep searching and cross-referencing."
             ),
@@ -121,8 +121,8 @@ async def chat():
         "report-writer": AgentDefinition(
             description=(
                 "Use this agent when you need to create a formal research report document. "
-                "The report-writer reads research findings from c-w-d/research-notes/ and synthesizes "
-                "them into clear, concise, professionally formatted reports in c-w-d/results/. "
+                "The report-writer reads research findings from workspace/research-notes/ and synthesizes "
+                "them into clear, concise, professionally formatted reports in workspace/results/. "
                 "Ideal for creating structured documents with proper citations and organization. "
                 "Does NOT conduct web searches - only reads existing research notes and creates reports."
             ),

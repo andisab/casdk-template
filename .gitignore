@@ -55,9 +55,9 @@ workspace/*
 !workspace/.gitkeep
 
 # Working directory for agent outputs
-c-w-d/**/*
-!c-w-d/.gitkeep
-!c-w-d/*/.gitkeep
+workspace/**/*
+!workspace/.gitkeep
+!workspace/*/.gitkeep
 
 # Memory and checkpoints (gitignored, contains state)
 memory/checkpoints/*

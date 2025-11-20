@@ -31,7 +31,7 @@ eza -TL 3 --icons --git-ignore
 
 # Run agent
 ./scripts/run.sh
-uv run research_agent/agent.py
+uv run agents/agent.py
 
 # Development
 python scripts/analyze_logs.py              # Analyze latest session
@@ -54,10 +54,10 @@ uv add <package>                           # Add new dependency
 1. **User Request** → Lead Agent
 2. **Lead Agent** analyzes and breaks into 2-4 subtopics
 3. **Lead Agent** spawns 2-4 Researcher subagents in PARALLEL via Task tool
-4. **Researchers** use WebSearch (3-7 searches each) and Write to `c-w-d/research-notes/`
+4. **Researchers** use WebSearch (3-7 searches each) and Write to `workspace/research-notes/`
 5. **Lead Agent** waits for all researchers to complete
 6. **Lead Agent** spawns Report-Writer subagent via Task tool
-7. **Report-Writer** uses Glob/Read to load research, Write to create report in `c-w-d/results`
+7. **Report-Writer** uses Glob/Read to load research, Write to create report in `workspace/results`
 8. **Lead Agent** confirms completion to user
 
 ### Hook System
@@ -79,7 +79,7 @@ uv add <package>                           # Add new dependency
 
 ### Agent Definitions
 
-**Location**: `research_agent/agent.py`
+**Location**: `agents/agent.py`
 
 Current subagent types:
 - `researcher`: WebSearch + Write tools
@@ -87,11 +87,11 @@ Current subagent types:
 
 ### System Prompts
 
-**Location**: `research_agent/prompts/`
+**Location**: `agents/prompts/`
 
 - `lead_agent.txt`: Coordinator behavior (ONLY uses Task tool)
 - `researcher.txt`: Research gathering (MUST use WebSearch, max 3-4 paragraphs)
-- `report_writer.txt`: Report synthesis (reads from files/, uses skills)
+- `report_writer.txt`: Report synthesis (reads from workspace/, uses skills)
 
 ### Skills
 
@@ -104,7 +104,7 @@ Current subagent types:
 
 ### Adding New Subagent Types
 
-1. Create prompt file: `research_agent/prompts/your_agent.txt`
+1. Create prompt file: `agents/prompts/your_agent.txt`
 2. Add to `agents` dict in `agent.py`:
 ```python
 "your-agent": AgentDefinition(
@@ -143,33 +143,33 @@ tools=["WebSearch", "Write", "Read", "Edit", "Bash"]
 
 **Working Directory**:
 - Files created relative to where agent is run
-- Default: `files/research-notes/` and `files/reports/`
+- Default: `workspace/research-notes/` and `workspace/results/`
 
 ## Implementation Details
 
 ### Key Files
 
-#### `research_agent/agent.py`
+#### `agents/agent.py`
 Main entry point. Key functions:
 - `load_prompt()`: Loads prompts from files
 - `chat()`: Main async loop, handles user input
 - Sets up hooks, agents, and SDK options
 
-#### `research_agent/utils/subagent_tracker.py`
+#### `agents/utils/subagent_tracker.py`
 Hook implementation for tracking. Key features:
 - `register_subagent_spawn()`: Creates unique agent IDs
 - `pre_tool_use_hook()`: Captures tool calls before execution
 - `post_tool_use_hook()`: Captures results after execution
 - `_log_tool_use()`: Formats output for console and files
 
-#### `research_agent/utils/message_handler.py`
+#### `agents/utils/message_handler.py`
 Processes message stream. Key features:
 - Extracts `parent_tool_use_id` from messages
 - Detects Task tool usage (subagent spawning)
 - Updates tracker context
 - Formats console output
 
-#### `research_agent/utils/transcript.py`
+#### `agents/utils/transcript.py`
 Session logging utilities:
 - `setup_session()`: Creates timestamped log directory
 - `TranscriptWriter`: Dual output (console + file)
@@ -183,15 +183,15 @@ Session logging utilities:
 - Use `clean_logs.sh` to remove old sessions
 - Default .gitignore excludes all log contents
 
-**Research Files**: Created in `files/`
-- `c-w-d/research-notes/`: Raw research from researchers
-- `c-w-d/results/`: Final synthesized reports
+**Research Files**: Created in `workspace/`
+- `workspace/research-notes/`: Raw research from researchers
+- `workspace/results/`: Final synthesized reports
 - .gitignore excludes file contents but tracks directory structure
 
 ### Updating Prompts
 
 When modifying prompts, test thoroughly:
-1. Make changes to `.txt` files in `research_agent/prompts/`
+1. Make changes to `.txt` files in `agents/prompts/`
 2. Test with simple query first
 3. Check logs for unexpected behavior
 4. Verify tool usage is as expected
@@ -258,7 +258,7 @@ uv sync --upgrade
 - Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Restart shell after installation
 
-**"No module named 'research_agent'"**
+**"No module named 'agents'"**
 - Run `uv sync` to install dependencies
 - Ensure running from project root
 
