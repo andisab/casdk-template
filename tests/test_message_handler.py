@@ -4,6 +4,7 @@ These tests lock in the Task -> Agent rename compatibility (Claude Code v2.1.63)
 and verify that block dispatch, parent context propagation, and subagent
 spawn detection behave correctly.
 """
+
 from typing import Any
 
 from claude_agent_sdk import AssistantMessage, TextBlock, ToolUseBlock
@@ -16,8 +17,8 @@ class FakeTracker:
         self.parent_id_history: list[Any] = []
         self.spawns: list[dict[str, Any]] = []
 
-    def set_current_context(self, parent_id: Any) -> None:
-        self.parent_id_history.append(parent_id)
+    def set_current_context(self, parent_tool_use_id: Any) -> None:
+        self.parent_id_history.append(parent_tool_use_id)
 
     def register_subagent_spawn(
         self, *, tool_use_id: str, subagent_type: str, description: str, prompt: str
@@ -38,12 +39,23 @@ class FakeTracker:
 class FakeTranscript:
     def __init__(self) -> None:
         self.console: list[str] = []
+        self.tool_used = False
+        self.flushes = 0
 
     def write(self, text: str, end: str = "", flush: bool = True) -> None:
         self.console.append(text + end)
 
     def write_to_file(self, text: str, flush: bool = True) -> None:  # pragma: no cover
         pass
+
+    def mark_tool_used(self) -> None:
+        self.tool_used = True
+
+    def flush_pending_break(self) -> None:
+        if self.tool_used:
+            self.console.append("\n")
+            self.tool_used = False
+            self.flushes += 1
 
 
 def _msg(*blocks, parent_tool_use_id: str | None = None) -> AssistantMessage:
@@ -126,6 +138,26 @@ def test_missing_subagent_input_fields_use_defaults():
     assert tracker.spawns[0]["subagent_type"] == "unknown"
     assert tracker.spawns[0]["description"] == "no description"
     assert tracker.spawns[0]["prompt"] == ""
+
+
+def test_tool_use_then_text_flushes_break_separator():
+    """A ToolUseBlock should mark a pending break; the next TextBlock flushes it.
+
+    Replaces the implicit-global-state behavior with explicit transcript state.
+    """
+    tracker, transcript = FakeTracker(), FakeTranscript()
+
+    process_assistant_message(
+        _msg(ToolUseBlock(id="tu_a", name="WebSearch", input={"query": "x"})),
+        tracker,
+        transcript,
+    )
+    assert transcript.tool_used is True
+    assert transcript.flushes == 0
+
+    process_assistant_message(_msg(TextBlock(text="next")), tracker, transcript)
+    assert transcript.flushes == 1
+    assert transcript.tool_used is False
 
 
 def test_mixed_blocks_in_one_message():

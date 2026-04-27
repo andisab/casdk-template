@@ -4,18 +4,19 @@ import asyncio
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 from claude_agent_sdk import (
     AgentDefinition,
     AssistantMessage,
     ClaudeAgentOptions,
     ClaudeSDKClient,
     HookMatcher,
+    ResultMessage,
 )
+from dotenv import load_dotenv
 
-from agents.utils.subagent_tracker import SubagentTracker
-from agents.utils.transcript import setup_session, TranscriptWriter
 from agents.utils.message_handler import process_assistant_message
+from agents.utils.subagent_tracker import SubagentTracker
+from agents.utils.transcript import TranscriptWriter, setup_session
 
 # Load environment variables
 load_dotenv()
@@ -27,7 +28,7 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 def load_prompt(filename: str) -> str:
     """Load a prompt from the prompts directory."""
     prompt_path = PROMPTS_DIR / filename
-    with open(prompt_path, "r", encoding="utf-8") as f:
+    with open(prompt_path, encoding="utf-8") as f:
         return f.read().strip()
 
 
@@ -43,22 +44,26 @@ def build_agents(
         "researcher": AgentDefinition(
             description=(
                 "Use this agent when you need to gather research information on any topic. "
-                "The researcher uses web search to find relevant information, articles, and sources "
-                "from across the internet. Writes research findings to workspace/research-notes/ "
-                "for later use by report writers. Ideal for complex research tasks "
-                "that require deep searching and cross-referencing."
+                "The researcher uses web search to find relevant information, articles, "
+                "and sources from across the internet. Writes research findings to "
+                "workspace/research-notes/ for later use by report writers. Ideal for "
+                "complex research tasks that require deep searching and cross-referencing."
             ),
             tools=["WebSearch", "Write"],
             prompt=researcher_prompt,
             model="haiku",
+            # Cap iterations so a confused researcher can't burn through
+            # WebSearch calls indefinitely.
+            maxTurns=10,
         ),
         "report-writer": AgentDefinition(
             description=(
                 "Use this agent when you need to create a formal research report document. "
-                "The report-writer reads research findings from workspace/research-notes/ and synthesizes "
-                "them into clear, concise, professionally formatted reports in workspace/results/. "
-                "Ideal for creating structured documents with proper citations and organization. "
-                "Does NOT conduct web searches - only reads existing research notes and creates reports."
+                "The report-writer reads research findings from workspace/research-notes/ "
+                "and synthesizes them into clear, concise, professionally formatted reports "
+                "in workspace/results/. Ideal for creating structured documents with proper "
+                "citations and organization. Does NOT conduct web searches - only reads "
+                "existing research notes and creates reports."
             ),
             tools=["Skill", "Write", "Glob", "Read"],
             prompt=report_writer_prompt,
@@ -67,6 +72,7 @@ def build_agents(
             # joplin-research routes by request type; it delegates markdown formatting
             # to joplin-formatting, which must be available to the same subagent.
             skills=["joplin-research", "joplin-formatting"],
+            maxTurns=5,
         ),
     }
 
@@ -144,6 +150,9 @@ async def chat():
     print(f"Session logs: {session_dir}")
     print("Type 'exit' or 'quit' to end.\n")
 
+    # Cumulative session metrics, populated from ResultMessage events.
+    totals = {"turns": 0, "cost_usd": 0.0, "input_tokens": 0, "output_tokens": 0}
+
     try:
         async with ClaudeSDKClient(options=options) as client:
             while True:
@@ -168,15 +177,39 @@ async def chat():
                 async for msg in client.receive_response():
                     if isinstance(msg, AssistantMessage):
                         process_assistant_message(msg, tracker, transcript)
+                    elif isinstance(msg, ResultMessage):
+                        _accumulate_result(totals, msg)
 
                 transcript.write("\n")
     finally:
         transcript.write("\n\nGoodbye!\n")
+        if totals["turns"]:
+            transcript.write(_format_totals(totals) + "\n")
         transcript.close()
         tracker.close()
         print(f"\nSession logs saved to: {session_dir}")
         print(f"  - Transcript: {transcript_file}")
         print(f"  - Tool calls: {session_dir / 'tool_calls.jsonl'}")
+
+
+def _accumulate_result(totals: dict, msg: ResultMessage) -> None:
+    """Add a ResultMessage's metrics into the running session totals dict."""
+    totals["turns"] += getattr(msg, "num_turns", 0) or 0
+    cost = getattr(msg, "total_cost_usd", None)
+    if cost is not None:
+        totals["cost_usd"] += cost
+    usage = getattr(msg, "usage", None) or {}
+    totals["input_tokens"] += usage.get("input_tokens", 0) or 0
+    totals["output_tokens"] += usage.get("output_tokens", 0) or 0
+
+
+def _format_totals(totals: dict) -> str:
+    """Render the cumulative session totals as a single-line summary."""
+    return (
+        f"Session: {totals['turns']} turns, "
+        f"${totals['cost_usd']:.4f} USD, "
+        f"{totals['input_tokens']:,} input / {totals['output_tokens']:,} output tokens"
+    )
 
 
 if __name__ == "__main__":

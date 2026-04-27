@@ -1,4 +1,5 @@
 """Tests for agents.utils.transcript."""
+
 from agents.utils.transcript import TranscriptWriter, setup_session
 
 

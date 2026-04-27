@@ -1,9 +1,8 @@
 """Shared pytest fixtures."""
+
 from pathlib import Path
 
 import pytest
-
-from agents.utils import message_handler
 
 
 @pytest.fixture
@@ -24,11 +23,3 @@ def session_dir(tmp_path: Path) -> Path:
 @pytest.fixture
 def transcript_file(session_dir: Path) -> Path:
     return session_dir / "transcript.txt"
-
-
-@pytest.fixture(autouse=True)
-def _reset_message_handler_state():
-    """Reset module-level _tool_just_used between tests so state never leaks across cases."""
-    message_handler._tool_just_used = False
-    yield
-    message_handler._tool_just_used = False

@@ -4,10 +4,18 @@ These exercise the build_agents() and build_options() factories so we can
 assert on the constructed AgentDefinition / ClaudeAgentOptions objects
 instead of grepping the source.
 """
+
+from types import SimpleNamespace
+
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions
 
-from agents.agent import build_agents, build_options, load_prompt
-
+from agents.agent import (
+    _accumulate_result,
+    _format_totals,
+    build_agents,
+    build_options,
+    load_prompt,
+)
 
 # --- module-level smoke ---------------------------------------------------
 
@@ -62,6 +70,13 @@ def test_report_writer_declares_joplin_research_and_formatting_skills():
     skills = agents["report-writer"].skills or []
     assert "joplin-research" in skills
     assert "joplin-formatting" in skills
+
+
+def test_subagents_have_max_turns_cap():
+    """Both subagents should declare maxTurns to prevent runaway loops."""
+    agents = _agents()
+    assert agents["researcher"].maxTurns == 10
+    assert agents["report-writer"].maxTurns == 5
 
 
 def test_subagents_cannot_spawn_other_subagents():
@@ -125,3 +140,50 @@ def test_build_options_attaches_agents():
 def test_build_options_uses_haiku_model_default():
     options = _options()
     assert options.model == "haiku"
+
+
+# --- ResultMessage accumulation ------------------------------------------
+
+
+def _result(**kwargs) -> SimpleNamespace:
+    """Build a ResultMessage-shaped object using duck typing.
+
+    Real ResultMessage requires many positional fields; SimpleNamespace lets
+    us assert the accumulator only touches the attributes it claims to.
+    """
+    defaults: dict = {
+        "num_turns": 0,
+        "total_cost_usd": None,
+        "usage": None,
+    }
+    defaults.update(kwargs)
+    return SimpleNamespace(**defaults)
+
+
+def test_accumulate_result_sums_turns_cost_and_tokens():
+    totals = {"turns": 0, "cost_usd": 0.0, "input_tokens": 0, "output_tokens": 0}
+
+    _accumulate_result(
+        totals,
+        _result(num_turns=3, total_cost_usd=0.01, usage={"input_tokens": 100, "output_tokens": 50}),
+    )
+    _accumulate_result(
+        totals,
+        _result(num_turns=2, total_cost_usd=0.02, usage={"input_tokens": 40, "output_tokens": 60}),
+    )
+
+    assert totals == {"turns": 5, "cost_usd": 0.03, "input_tokens": 140, "output_tokens": 110}
+
+
+def test_accumulate_result_tolerates_missing_fields():
+    """Cost/usage may legitimately be None; turns may be 0 — none of those should crash."""
+    totals = {"turns": 0, "cost_usd": 0.0, "input_tokens": 0, "output_tokens": 0}
+    _accumulate_result(totals, _result())
+    assert totals == {"turns": 0, "cost_usd": 0.0, "input_tokens": 0, "output_tokens": 0}
+
+
+def test_format_totals_renders_one_line_summary():
+    out = _format_totals(
+        {"turns": 4, "cost_usd": 0.0312, "input_tokens": 12847, "output_tokens": 3201}
+    )
+    assert out == "Session: 4 turns, $0.0312 USD, 12,847 input / 3,201 output tokens"

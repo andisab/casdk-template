@@ -1,5 +1,9 @@
 # Sample Agentic Team: Multi-Agent Research System
 
+[![CI](https://github.com/andisab/ab-casdk-template/actions/workflows/ci.yml/badge.svg)](https://github.com/andisab/ab-casdk-template/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A standalone multi-agent research system built on the [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/python). A lead agent decomposes a topic into subtopics, dispatches researcher subagents in parallel, and then synthesizes their findings via a report-writer subagent.
 
 > ⚠️ **Scope & safety — please read before running**
@@ -8,7 +12,7 @@ A standalone multi-agent research system built on the [Claude Agent SDK](https:/
 >
 > - **Not sandboxed, not containerized.** Agents run with your shell user's permissions and write directly to your filesystem. 
 > - **No special safeguards against prompt injection,** so be selective and thoughtful about what sites you are searching with the harness in present state. 
-> - **`permission_mode="bypassPermissions"` is the default**, which auto-approves every tool call (web searches, file writes, etc.). Fine for local exploration on trusted directories — somewhat inadvisable / risky elsewhere.
+> - **`permission_mode="bypassPermissions"` is the default**, which auto-approves every tool call (web searches, file writes, etc.). Fine for local exploration on trusted directories; inadvisable elsewhere.
 > - **No monitoring, metrics, or alerting.** Logs are plain files under `logs/`. There is no cost tracking, rate limiting, dashboard, or telemetry export.
 > - **No retry or failure-recovery logic** beyond what the SDK itself provides.
 > - **Single user, single session.** No multi-tenant safeguards, no authentication, no queueing.
@@ -56,8 +60,6 @@ A standalone multi-agent research system built on the [Claude Agent SDK](https:/
    ```
 
 ### Example Usage
-
-Single-line prompts only:
 
 ```
 You: Research recent developments in quantum computing
@@ -288,6 +290,19 @@ uv run --group dev pytest
 ./scripts/test.sh -k message_handler -vv
 ```
 
+### Linting
+
+Style and import order are enforced with [ruff](https://docs.astral.sh/ruff/). CI runs `ruff check` and `ruff format --check` on every push.
+
+```bash
+# Check
+./scripts/lint.sh
+
+# Auto-fix what can be fixed
+uv run --group dev ruff check --fix
+uv run --group dev ruff format
+```
+
 ### Cleaning Logs
 
 ```bash
@@ -378,18 +393,13 @@ If the agent runs but no files appear in `workspace/`, check:
 - The `workspace/` directory is created automatically — check write permissions.
 - Inspect session logs: `cat logs/session_*/transcript.txt` and `logs/session_*/tool_calls.jsonl`.
 
-## Contributing
+## About this repo
 
-This is a standalone template. Feel free to:
-- Add new subagent types
-- Enhance the existing prompts
-- Create new skills
-- Fork it, copy it, do whatever fits your project
+This is a personal learning template for the Claude Agent SDK; issues and pull requests are not actively triaged. The expected use pattern is to fork it (or click **Use this template**) and adapt it to your own project. The architecture, prompts, and skills are all intended to be edited.
 
 ## Roadmap
 
-- Multi-line / multi-modal input UI (images, files, etc.)
-- Cost / token usage tracking and rate limiting
+- Rate limiting and budget caps on top of the per-session cost reporting
 - Optional Agent-as-a-file (`.claude/agents/*.md`) loading alongside programmatic `AgentDefinition`s
 - More worked-example skills (citations, structured-output formatting, domain-specific research types)
 

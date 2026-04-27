@@ -5,6 +5,7 @@ Locks in:
 - Agent/Task subagent-spawn tool is skipped on the main agent (logged elsewhere).
 - Tool calls under an active subagent context are attributed to that subagent.
 """
+
 import json
 from pathlib import Path
 
@@ -85,9 +86,7 @@ async def test_pre_tool_use_hook_returns_empty_dict(tracker):
 
 
 async def test_post_tool_use_hook_returns_empty_dict_for_unknown_id(tracker):
-    result = await tracker.post_tool_use_hook(
-        {"tool_response": {}}, "never_seen", None
-    )
+    result = await tracker.post_tool_use_hook({"tool_response": {}}, "never_seen", None)
     assert result == {}
 
 
@@ -100,9 +99,7 @@ async def test_post_tool_use_hook_returns_empty_dict_for_known_id(tracker):
         {"tool_name": "WebSearch", "tool_input": {"query": "x"}}, "tu_search", None
     )
 
-    result = await tracker.post_tool_use_hook(
-        {"tool_response": "ok"}, "tu_search", None
-    )
+    result = await tracker.post_tool_use_hook({"tool_response": "ok"}, "tu_search", None)
     assert result == {}
 
 
@@ -169,9 +166,7 @@ async def test_post_hook_records_error_from_tool_response(tracker):
         {"tool_name": "WebSearch", "tool_input": {"query": "x"}}, "tu_search", None
     )
 
-    await tracker.post_tool_use_hook(
-        {"tool_response": {"error": "rate limit"}}, "tu_search", None
-    )
+    await tracker.post_tool_use_hook({"tool_response": {"error": "rate limit"}}, "tu_search", None)
 
     record = tracker.tool_call_records["tu_search"]
     assert record.error == "rate limit"
@@ -186,9 +181,7 @@ async def test_post_hook_writes_completion_entry_to_jsonl(tracker, session_dir):
     await tracker.pre_tool_use_hook(
         {"tool_name": "WebSearch", "tool_input": {"query": "x"}}, "tu_search", None
     )
-    await tracker.post_tool_use_hook(
-        {"tool_response": "result text"}, "tu_search", None
-    )
+    await tracker.post_tool_use_hook({"tool_response": "result text"}, "tu_search", None)
 
     entries = _read_jsonl(session_dir / "tool_calls.jsonl")
     events = [e["event"] for e in entries]

@@ -9,17 +9,6 @@
 > ⚠️ Not sandboxed, not containerized, no monitoring. `permission_mode="bypassPermissions"`
 > is the default. See README "Scope & safety" callout before changing.
 
-### Recent Changes
-- Modernized for current Claude Agent SDK: `Task` → `Agent` tool rename (allow both for compat)
-- Hook callbacks return `{}` (canonical) instead of `{'continue_': True}`
-- Removed ~50 LOC of CLI auto-discovery; SDK locates the CLI on `$PATH`
-- Switched to `isinstance` checks against SDK-imported `AssistantMessage`/`TextBlock`/`ToolUseBlock`
-- Extracted `build_agents()` and `build_options()` factories from `chat()` for testability
-- Added `tests/` directory with 40 pytest tests; added `scripts/test.sh`
-- Bundled `joplin-research` + `joplin-formatting` skills under `.claude/skills/`
-- `report-writer` `AgentDefinition` declares `skills=["joplin-research", "joplin-formatting"]`
-  (subagents do **not** inherit project skills)
-
 ## Quick Reference
 
 ### File Structure
@@ -39,10 +28,15 @@ eza -TL 3 --icons --git-ignore
 ./scripts/run.sh
 uv run agents/agent.py
 
-# Tests (40 tests, ~0.03s)
+# Tests (45 tests, ~0.03s)
 ./scripts/test.sh
 ./scripts/test.sh -k message_handler -vv
 uv run --group dev pytest
+
+# Lint + format check (ruff)
+./scripts/lint.sh
+uv run --group dev ruff check --fix
+uv run --group dev ruff format
 
 # Logs
 python scripts/analyze_logs.py              # Analyze latest session
@@ -219,7 +213,7 @@ Session logging. Key symbols:
 
 ### Tests
 
-**Location**: `tests/` (40 tests, ~0.03s)
+**Location**: `tests/` (45 tests, ~0.03s)
 - `test_agent_setup.py`: behavioral tests for `build_agents()` and `build_options()`
 - `test_message_handler.py`: block dispatch, `Agent`/`Task` spawn detection
 - `test_subagent_tracker.py`: hook callbacks, JSONL output, attribution
@@ -227,7 +221,7 @@ Session logging. Key symbols:
 
 **Config**: `[tool.pytest.ini_options]` in `pyproject.toml`, `asyncio_mode = "auto"`.
 
-**Dev deps**: declared in `[dependency-groups] dev` (PEP 735) — `pytest`, `pytest-asyncio`.
+**Dev deps**: declared in `[dependency-groups] dev` (PEP 735) — `pytest`, `pytest-asyncio`, `ruff`.
 
 ## Maintenance Notes
 
