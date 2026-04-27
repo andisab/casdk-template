@@ -63,6 +63,10 @@ def build_agents(
             tools=["Skill", "Write", "Glob", "Read"],
             prompt=report_writer_prompt,
             model="haiku",
+            # Subagents do not inherit project skills automatically - declare them here.
+            # joplin-research routes by request type; it delegates markdown formatting
+            # to joplin-formatting, which must be available to the same subagent.
+            skills=["joplin-research", "joplin-formatting"],
         ),
     }
 
