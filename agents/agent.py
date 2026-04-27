@@ -31,6 +31,66 @@ def load_prompt(filename: str) -> str:
         return f.read().strip()
 
 
+def build_agents(
+    *, researcher_prompt: str, report_writer_prompt: str
+) -> dict[str, AgentDefinition]:
+    """Build the dict of subagent definitions used by this template.
+
+    Exposed as a factory so tests can construct and inspect the AgentDefinitions
+    without spinning up a ClaudeSDKClient.
+    """
+    return {
+        "researcher": AgentDefinition(
+            description=(
+                "Use this agent when you need to gather research information on any topic. "
+                "The researcher uses web search to find relevant information, articles, and sources "
+                "from across the internet. Writes research findings to workspace/research-notes/ "
+                "for later use by report writers. Ideal for complex research tasks "
+                "that require deep searching and cross-referencing."
+            ),
+            tools=["WebSearch", "Write"],
+            prompt=researcher_prompt,
+            model="haiku",
+        ),
+        "report-writer": AgentDefinition(
+            description=(
+                "Use this agent when you need to create a formal research report document. "
+                "The report-writer reads research findings from workspace/research-notes/ and synthesizes "
+                "them into clear, concise, professionally formatted reports in workspace/results/. "
+                "Ideal for creating structured documents with proper citations and organization. "
+                "Does NOT conduct web searches - only reads existing research notes and creates reports."
+            ),
+            tools=["Skill", "Write", "Glob", "Read"],
+            prompt=report_writer_prompt,
+            model="haiku",
+        ),
+    }
+
+
+def build_options(
+    *,
+    system_prompt: str,
+    agents: dict[str, AgentDefinition],
+    hooks: dict[str, list[HookMatcher]] | None = None,
+) -> ClaudeAgentOptions:
+    """Build the ClaudeAgentOptions for the lead agent session.
+
+    Exposed as a factory so tests can assert on the constructed options without
+    starting a session.
+    """
+    return ClaudeAgentOptions(
+        permission_mode="bypassPermissions",
+        setting_sources=["project"],  # Load skills from project .claude directory
+        system_prompt=system_prompt,
+        # The subagent tool was renamed Task -> Agent in Claude Code v2.1.63.
+        # Allow both so the lead agent can spawn subagents on old and new SDKs.
+        allowed_tools=["Agent", "Task"],
+        agents=agents,
+        hooks=hooks or {},
+        model="haiku",
+    )
+
+
 async def chat():
     """Start interactive chat with the research agent."""
 
@@ -56,59 +116,21 @@ async def chat():
     tracker = SubagentTracker(transcript_writer=transcript, session_dir=session_dir)
 
     # Define specialized subagents
-    agents = {
-        "researcher": AgentDefinition(
-            description=(
-                "Use this agent when you need to gather research information on any topic. "
-                "The researcher uses web search to find relevant information, articles, and sources "
-                "from across the internet. Writes research findings to workspace/research-notes/ "
-                "for later use by report writers. Ideal for complex research tasks "
-                "that require deep searching and cross-referencing."
-            ),
-            tools=["WebSearch", "Write"],
-            prompt=researcher_prompt,
-            model="haiku"
-        ),
-        "report-writer": AgentDefinition(
-            description=(
-                "Use this agent when you need to create a formal research report document. "
-                "The report-writer reads research findings from workspace/research-notes/ and synthesizes "
-                "them into clear, concise, professionally formatted reports in workspace/results/. "
-                "Ideal for creating structured documents with proper citations and organization. "
-                "Does NOT conduct web searches - only reads existing research notes and creates reports."
-            ),
-            tools=["Skill", "Write", "Glob", "Read"],
-            prompt=report_writer_prompt,
-            model="haiku"
-        )
+    agents = build_agents(
+        researcher_prompt=researcher_prompt,
+        report_writer_prompt=report_writer_prompt,
+    )
+
+    # Set up hooks for tracking (matcher=None matches all tools)
+    hooks: dict[str, list[HookMatcher]] = {
+        "PreToolUse": [HookMatcher(matcher=None, hooks=[tracker.pre_tool_use_hook])],
+        "PostToolUse": [HookMatcher(matcher=None, hooks=[tracker.post_tool_use_hook])],
     }
 
-    # Set up hooks for tracking
-    hooks = {
-        'PreToolUse': [
-            HookMatcher(
-                matcher=None,  # Match all tools
-                hooks=[tracker.pre_tool_use_hook]
-            )
-        ],
-        'PostToolUse': [
-            HookMatcher(
-                matcher=None,  # Match all tools
-                hooks=[tracker.post_tool_use_hook]
-            )
-        ]
-    }
-
-    options = ClaudeAgentOptions(
-        permission_mode="bypassPermissions",
-        setting_sources=["project"],  # Load skills from project .claude directory
+    options = build_options(
         system_prompt=lead_agent_prompt,
-        # The subagent tool was renamed Task -> Agent in Claude Code v2.1.63.
-        # Allow both so the lead agent can spawn subagents on old and new SDKs.
-        allowed_tools=["Agent", "Task"],
         agents=agents,
         hooks=hooks,
-        model="haiku",
     )
 
     print("\n=== Research Agent ===")
