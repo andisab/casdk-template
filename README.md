@@ -1,6 +1,6 @@
 # Sample Agentic Team: Multi-Agent Research System
 
-[![CI](https://github.com/andisab/ab-casdk-template/actions/workflows/ci.yml/badge.svg)](https://github.com/andisab/ab-casdk-template/actions/workflows/ci.yml)
+[![CI](https://github.com/andisab/casdk-template/actions/workflows/ci.yml/badge.svg)](https://github.com/andisab/casdk-template/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -31,7 +31,7 @@ A standalone multi-agent research system built on the [Claude Agent SDK](https:/
 
 ## Quick Start
 
-> 💡 **Starting a new project?** Click **Use this template** on GitHub to fork without inheriting history, or `gh repo create my-project --template andisab/ab-casdk-template`.
+> 💡 **Starting a new project?** Click **Use this template** on GitHub to fork without inheriting history, or `gh repo create my-project --template andisab/casdk-template`.
 
 ### Prerequisites
 
@@ -150,7 +150,7 @@ The bundled `joplin-research` and `joplin-formatting` skills produce reports tun
 ## Project Structure
 
 ```
-ab-casdk-template/
+casdk-template/
 ├── .env.example                 # Environment variables template
 ├── .gitignore
 ├── pyproject.toml               # Project + dev dependency groups + pytest config
