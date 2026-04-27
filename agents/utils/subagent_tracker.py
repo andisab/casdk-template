@@ -41,7 +41,8 @@ class SubagentTracker:
     Tracks all tool calls made by subagents using both hooks and message stream parsing.
 
     This tracker:
-    1. Monitors the message stream to detect subagent spawns via Task tool
+    1. Monitors the message stream to detect subagent spawns via the Agent tool
+       (also accepts the legacy "Task" name from Claude Code builds before v2.1.63)
     2. Uses hooks (PreToolUse/PostToolUse) to capture all tool invocations
     3. Associates tool calls with their originating subagent
     4. Logs tool usage to console and transcript files
@@ -82,7 +83,7 @@ class SubagentTracker:
         Register a new subagent spawn detected from the message stream.
 
         Args:
-            tool_use_id: The ID of the Task tool use block
+            tool_use_id: The ID of the Agent (or legacy Task) tool use block
             subagent_type: Type of subagent (e.g., 'researcher', 'report-writer')
             description: Brief description of the task
             prompt: The full prompt given to the subagent
@@ -165,7 +166,7 @@ class SubagentTracker:
         if 'pattern' in tool_input:
             return f"pattern='{tool_input['pattern']}'"
 
-        # Task: show subagent spawn
+        # Agent / Task: show subagent spawn
         if 'subagent_type' in tool_input:
             return f"spawn={tool_input.get('subagent_type', '')} ({tool_input.get('description', '')})"
 
@@ -216,7 +217,9 @@ class SubagentTracker:
                 "tool_input": tool_input,
                 "parent_tool_use_id": self._current_parent_id
             })
-        elif tool_name != 'Task':  # Skip Task calls for main agent (handled by spawn message)
+        # Skip subagent-spawn tool (Agent / Task) for the main agent - those are
+        # logged separately via register_subagent_spawn from the message stream.
+        elif tool_name not in ('Agent', 'Task'):
             # Main agent tool call
             self._log_tool_use("MAIN AGENT", tool_name, tool_input)
             self._log_to_jsonl({
@@ -229,7 +232,9 @@ class SubagentTracker:
                 "tool_input": tool_input
             })
 
-        return {'continue_': True}
+        # Return empty dict = allow. Canonical SDK shape; non-empty values are
+        # reserved for {"decision": "block"}, "systemMessage", "hookSpecificOutput".
+        return {}
 
     async def post_tool_use_hook(self, hook_input, tool_use_id, context):
         """Hook callback for PostToolUse events - captures tool results."""
@@ -237,7 +242,7 @@ class SubagentTracker:
         record = self.tool_call_records.get(tool_use_id)
 
         if not record:
-            return {'continue_': True}
+            return {}
 
         # Update record with output
         record.tool_output = tool_response
@@ -268,7 +273,7 @@ class SubagentTracker:
             "output_size": len(str(tool_response)) if tool_response else 0
         })
 
-        return {'continue_': True}
+        return {}
 
     def close(self):
         """Close the tool log file."""

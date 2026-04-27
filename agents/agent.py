@@ -2,11 +2,16 @@
 
 import asyncio
 import os
-import subprocess
-import shutil
 from pathlib import Path
+
 from dotenv import load_dotenv
-from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions, AgentDefinition, HookMatcher
+from claude_agent_sdk import (
+    AgentDefinition,
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    HookMatcher,
+)
 
 from agents.utils.subagent_tracker import SubagentTracker
 from agents.utils.transcript import setup_session, TranscriptWriter
@@ -24,60 +29,6 @@ def load_prompt(filename: str) -> str:
     prompt_path = PROMPTS_DIR / filename
     with open(prompt_path, "r", encoding="utf-8") as f:
         return f.read().strip()
-
-
-def find_claude_cli() -> str | None:
-    """Find the Claude CLI executable.
-
-    Tries multiple approaches:
-    1. Check if 'claude' is in PATH
-    2. Check npm global bin directory
-    3. Check common nvm installation paths
-
-    Returns:
-        Path to claude executable, or None if not found
-    """
-    # First, try shutil.which (checks PATH)
-    claude_path = shutil.which("claude")
-    if claude_path:
-        return claude_path
-
-    # Try npm global bin directory
-    try:
-        npm_prefix = subprocess.run(
-            ["npm", "config", "get", "prefix"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=5
-        ).stdout.strip()
-
-        npm_bin_claude = Path(npm_prefix) / "bin" / "claude"
-        if npm_bin_claude.exists():
-            return str(npm_bin_claude)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
-        pass
-
-    # Check common nvm paths as fallback
-    home = Path.home()
-    nvm_paths = [
-        home / ".nvm" / "versions" / "node",
-        home / ".local" / "share" / "nvm",
-    ]
-
-    for nvm_base in nvm_paths:
-        if nvm_base.exists():
-            # Find the most recent node version
-            try:
-                node_versions = sorted(nvm_base.iterdir(), reverse=True)
-                for version_dir in node_versions:
-                    claude_bin = version_dir / "bin" / "claude"
-                    if claude_bin.exists():
-                        return str(claude_bin)
-            except (OSError, PermissionError):
-                continue
-
-    return None
 
 
 async def chat():
@@ -148,32 +99,16 @@ async def chat():
         ]
     }
 
-    # Find Claude CLI executable
-    claude_cli_path = find_claude_cli()
-    if not claude_cli_path:
-        print("\n❌ Error: Could not find Claude CLI executable")
-        print("\nPlease install Claude Code:")
-        print("  npm install -g @anthropic-ai/claude-code")
-        print("\nOr ensure it's in your PATH:")
-        print("  export PATH=\"$(npm config get prefix)/bin:$PATH\"")
-        return
-
-    # Add the npm bin directory to PATH so node can be found
-    # Claude CLI is a Node.js script that requires node in PATH
-    claude_bin_dir = Path(claude_cli_path).parent
-    current_path = os.environ.get("PATH", "")
-    if str(claude_bin_dir) not in current_path:
-        os.environ["PATH"] = f"{claude_bin_dir}:{current_path}"
-
     options = ClaudeAgentOptions(
         permission_mode="bypassPermissions",
         setting_sources=["project"],  # Load skills from project .claude directory
         system_prompt=lead_agent_prompt,
-        allowed_tools=["Task"],
+        # The subagent tool was renamed Task -> Agent in Claude Code v2.1.63.
+        # Allow both so the lead agent can spawn subagents on old and new SDKs.
+        allowed_tools=["Agent", "Task"],
         agents=agents,
         hooks=hooks,
         model="haiku",
-        cli_path=claude_cli_path
     )
 
     print("\n=== Research Agent ===")
@@ -205,7 +140,7 @@ async def chat():
 
                 # Stream and process response
                 async for msg in client.receive_response():
-                    if type(msg).__name__ == 'AssistantMessage':
+                    if isinstance(msg, AssistantMessage):
                         process_assistant_message(msg, tracker, transcript)
 
                 transcript.write("\n")
