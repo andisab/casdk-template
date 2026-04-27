@@ -30,9 +30,17 @@ env/
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
+*.cover
 htmlcov/
 .tox/
 .hypothesis/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # IDEs
 .vscode/
@@ -40,36 +48,22 @@ htmlcov/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Environment
 .env
 .env.local
 .env.*.local
 
-# Docker
-.dockerignore
-
-# Workspace (gitignored, contains agent work)
+# Workspace (agent-generated content)
 workspace/*
-!workspace/.gitkeep
-
-# Working directory for agent outputs
-workspace/**/*
 !workspace/.gitkeep
 !workspace/*/.gitkeep
 
-# Memory and checkpoints (gitignored, contains state)
-memory/checkpoints/*
-memory/context/*
-!memory/checkpoints/.gitkeep
-!memory/context/.gitkeep
-
-# Logs
+# Session logs
 logs/**/*
 !logs/**/.gitkeep
 
-# Temporary files
+# Temporary / scratch
 *.log
 *.tmp
 tmp/
@@ -78,11 +72,22 @@ temp/
 # Backups
 *.backup
 *.bak
-backup_*.sql.gz
 
-# Monitoring data
-prometheus_data/
-grafana_data/
+# Profiling
+*.prof
+*.stats
+profile.stats
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Jupyter
+.ipynb_checkpoints
+
+# Local Claude Code overrides (per-user, not for the repo)
+.claude/settings.local.json
 
 # Secrets
 secrets/
@@ -90,32 +95,3 @@ secrets/
 *.pem
 *.crt
 credentials.json
-
-# Mac
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Profiling
-*.prof
-*.stats
-profile.stats
-
-# Coverage
-.coverage.*
-coverage.xml
-*.cover
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Jupyter
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# uv
-uv.lock

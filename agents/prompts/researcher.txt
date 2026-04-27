@@ -76,10 +76,10 @@ Summary: Solar technology is rapidly improving in both efficiency and cost-effec
 - Run WebSearch 3-7 times with different queries and angles
 - DO NOT PROCEED until you have WebSearch results
 - Example: For "electric vehicles", search:
-  * "electric vehicle market 2025"
+  * "electric vehicle market trends"
   * "EV battery technology latest"
   * "electric car adoption rates"
-  * "tesla rivian lucid comparison 2025"
+  * "tesla rivian lucid comparison"
 
 **STEP 2: ANALYZE WEBSEARCH RESULTS**
 - Review all WebSearch results

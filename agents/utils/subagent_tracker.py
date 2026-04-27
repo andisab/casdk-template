@@ -122,7 +122,12 @@ class SubagentTracker:
         """
         self._current_parent_id = parent_tool_use_id
 
-    def _log_tool_use(self, agent_label: str, tool_name: str, tool_input: Dict[str, Any] = None):
+    def _log_tool_use(
+        self,
+        agent_label: str,
+        tool_name: str,
+        tool_input: Optional[Dict[str, Any]] = None,
+    ):
         """
         Helper method to log tool use to console, transcript, and detailed log.
 
@@ -185,11 +190,12 @@ class SubagentTracker:
         tool_input = hook_input['tool_input']
         timestamp = datetime.now().isoformat()
 
-        # Determine agent context
-        is_subagent = self._current_parent_id and self._current_parent_id in self.sessions
+        # Narrow Optional[str] to str so static checkers and downstream dict
+        # access don't have to special-case None.
+        parent_id = self._current_parent_id
 
-        if is_subagent:
-            session = self.sessions[self._current_parent_id]
+        if parent_id is not None and parent_id in self.sessions:
+            session = self.sessions[parent_id]
             agent_id = session.subagent_id
             agent_type = session.subagent_type
 
@@ -200,7 +206,7 @@ class SubagentTracker:
                 tool_input=tool_input,
                 tool_use_id=tool_use_id,
                 subagent_type=agent_type,
-                parent_tool_use_id=self._current_parent_id
+                parent_tool_use_id=parent_id,
             )
             session.tool_calls.append(record)
             self.tool_call_records[tool_use_id] = record
@@ -215,7 +221,7 @@ class SubagentTracker:
                 "agent_type": agent_type,
                 "tool_name": tool_name,
                 "tool_input": tool_input,
-                "parent_tool_use_id": self._current_parent_id
+                "parent_tool_use_id": parent_id,
             })
         # Skip subagent-spawn tool (Agent / Task) for the main agent - those are
         # logged separately via register_subagent_spawn from the message stream.
@@ -249,14 +255,16 @@ class SubagentTracker:
 
         # Check for errors
         error = tool_response.get('error') if isinstance(tool_response, dict) else None
+        # parent_tool_use_id is Optional[str]; only main-agent calls have None here.
+        parent_id = record.parent_tool_use_id
+        session = self.sessions.get(parent_id) if parent_id is not None else None
+
         if error:
             record.error = error
-            session = self.sessions.get(record.parent_tool_use_id)
             if session:
                 logger.warning(f"[{session.subagent_id}] Tool {record.tool_name} error: {error}")
 
         # Get agent info for logging
-        session = self.sessions.get(record.parent_tool_use_id)
         agent_id = session.subagent_id if session else "MAIN_AGENT"
         agent_type = session.subagent_type if session else "lead"
 

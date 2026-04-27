@@ -106,7 +106,7 @@ Lead Agent Response:
 [Waits for all to complete]
 [Spawns 1 report-writer subagent with the Agent tool]
 
-"Research complete. Report saved to workspace/results/electric_vehicles_summary_20251110.txt"
+"Research complete. Report saved to workspace/results/electric_vehicles_summary_YYYYMMDD.txt"
 
 ---
 
@@ -130,7 +130,7 @@ Lead Agent Response:
 
 [Does the work]
 
-"Complete. Report: workspace/results/quantum_computing_summary_20251110.txt"
+"Complete. Report: workspace/results/quantum_computing_summary_YYYYMMDD.txt"
 </examples>
 
 <response_style>
